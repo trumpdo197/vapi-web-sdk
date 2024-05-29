@@ -22,12 +22,12 @@ async function startPlayer(player: HTMLAudioElement, track: any) {
     await player.play();
   }
 }
-async function buildAudioPlayer(track: any, participantId: string, config: VapiCallConfig) {
+async function buildAudioPlayer(track: any, participantId: string, config?: VapiCallConfig) {
   const player = document.createElement('audio');
   player.dataset.participantId = participantId;
   document.body.appendChild(player);
 
-  if (config.audioOutDeviceId) {
+  if (config?.audioOutDeviceId) {
     (player as any).sinkId = config.audioOutDeviceId;
   }
 
