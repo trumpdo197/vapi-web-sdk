@@ -22,10 +22,15 @@ async function startPlayer(player: HTMLAudioElement, track: any) {
     await player.play();
   }
 }
-async function buildAudioPlayer(track: any, participantId: string) {
+async function buildAudioPlayer(track: any, participantId: string, config: VapiCallConfig) {
   const player = document.createElement('audio');
   player.dataset.participantId = participantId;
   document.body.appendChild(player);
+
+  if (config.audioOutDeviceId) {
+    (player as any).sinkId = config.audioOutDeviceId;
+  }
+
   await startPlayer(player, track);
   return player;
 }
@@ -99,6 +104,11 @@ class VapiEventEmitter extends EventEmitter {
   }
 }
 
+export interface VapiCallConfig {
+  audioInDeviceId?: string;
+  audioOutDeviceId?: string;
+}
+
 export default class Vapi extends VapiEventEmitter {
   private started: boolean = false;
   private call: DailyCall | null = null;
@@ -108,7 +118,6 @@ export default class Vapi extends VapiEventEmitter {
   constructor(apiToken: string, apiBaseUrl?: string) {
     super();
     client.baseUrl = apiBaseUrl ?? 'https://api.vapi.ai';
-    client.setSecurityData(apiToken);
   }
 
   private cleanup() {
@@ -121,6 +130,7 @@ export default class Vapi extends VapiEventEmitter {
   async start(
     assistant: CreateAssistantDTO | string,
     assistantOverrides?: OverrideAssistantDTO,
+    config?: VapiCallConfig,
   ): Promise<Call | null> {
     if (this.started) {
       return null;
@@ -169,7 +179,7 @@ export default class Vapi extends VapiEventEmitter {
         if (e.participant?.local) return;
         if (e.track.kind !== 'audio') return;
 
-        await buildAudioPlayer(e.track, e.participant.session_id);
+        await buildAudioPlayer(e.track, e.participant.session_id, config);
 
         if (e?.participant?.user_name !== 'Vapi Speaker') return;
         this.call?.sendAppMessage('playable');
@@ -200,6 +210,12 @@ export default class Vapi extends VapiEventEmitter {
           },
         },
       });
+
+      if (config?.audioInDeviceId) {
+        this.call.setInputDevicesAsync({
+          audioDeviceId: config?.audioInDeviceId,
+        });  
+      }
 
       return webCall;
     } catch (e) {
@@ -284,9 +300,9 @@ export default class Vapi extends VapiEventEmitter {
 
   public say(message: string, endCallAfterSpoken?: boolean) {
     this.send({
-      type:'say', 
+      type: 'say',
       message,
-      endCallAfterSpoken
-    })
+      endCallAfterSpoken,
+    });
   }
 }
