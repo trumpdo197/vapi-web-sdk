@@ -18,10 +18,13 @@ async function startPlayer(player, track) {
         await player.play();
     }
 }
-async function buildAudioPlayer(track, participantId) {
+async function buildAudioPlayer(track, participantId, config) {
     const player = document.createElement('audio');
     player.dataset.participantId = participantId;
     document.body.appendChild(player);
+    if (config?.audioOutDeviceId) {
+        player.sinkId = config.audioOutDeviceId;
+    }
     await startPlayer(player, track);
     return player;
 }
@@ -72,7 +75,7 @@ class Vapi extends VapiEventEmitter {
         this.call = null;
         this.speakingTimeout = null;
     }
-    async start(assistant, assistantOverrides) {
+    async start(assistant, assistantOverrides, config) {
         if (this.started) {
             return null;
         }
@@ -113,7 +116,7 @@ class Vapi extends VapiEventEmitter {
                     return;
                 if (e.track.kind !== 'audio')
                     return;
-                await buildAudioPlayer(e.track, e.participant.session_id);
+                await buildAudioPlayer(e.track, e.participant.session_id, config);
                 if (e?.participant?.user_name !== 'Vapi Speaker')
                     return;
                 this.call?.sendAppMessage('playable');
@@ -140,6 +143,11 @@ class Vapi extends VapiEventEmitter {
                     },
                 },
             });
+            if (config?.audioInDeviceId) {
+                this.call.setInputDevicesAsync({
+                    audioDeviceId: config?.audioInDeviceId,
+                });
+            }
             return webCall;
         }
         catch (e) {

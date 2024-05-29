@@ -33,6 +33,10 @@ declare class VapiEventEmitter extends EventEmitter {
     removeListener<E extends VapiEventNames>(event: E, listener: VapiEventListeners[E]): this;
     removeAllListeners(event?: VapiEventNames): this;
 }
+export interface VapiCallConfig {
+    audioInDeviceId?: string;
+    audioOutDeviceId?: string;
+}
 export default class Vapi extends VapiEventEmitter {
     private started;
     private call;
@@ -40,7 +44,7 @@ export default class Vapi extends VapiEventEmitter {
     private averageSpeechLevel;
     constructor(apiToken: string, apiBaseUrl?: string);
     private cleanup;
-    start(assistant: CreateAssistantDTO | string, assistantOverrides?: OverrideAssistantDTO): Promise<Call | null>;
+    start(assistant: CreateAssistantDTO | string, assistantOverrides?: OverrideAssistantDTO, config?: VapiCallConfig): Promise<Call | null>;
     private onAppMessage;
     private handleRemoteParticipantsAudioLevel;
     stop(): void;
